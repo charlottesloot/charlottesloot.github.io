@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kruidenwijzer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="page">
+
+        <main>
+
+            <h1>Kruidenwijzer</h1>
+            <div class="settings-wrapper">
+                <div class="circle-settings">
+                    <h2>Binnenste cirkel</h2>
+                    <div>
+                        <label>Woorden (gescheiden door komma's)</label>
+                        <textarea id="text-inner" rows="4" name="textarea-inner"></textarea>
+                    </div>
+                    <div class="color-pickers">
+                        <label>Ringkleur <input type="color" id="bg-inner" value="#0E2432"></label>
+                        <label>Text kleur <input type="color" id="text-inner" value="#0E2432"></label>
+                    </div>
+                    <label><input type="checkbox" id="show-inner" checked> Toon cirkel</label>
+                </div>
+
+                <div class="circle-settings">
+                    <h2>Middelste cirkel</h2>
+                    <div>
+                        <label>Woorden (gescheiden door komma's)</label>
+                        <textarea id="text-middle"></textarea>
+                    </div>
+                    <div class="color-pickers">
+                        <label>Ringkleur <input type="color" id="bg-middle" value="#E72278"></label>
+                        <label>Text kleur <input type="color" id="text-middle" value="#E72278"></label>
+                    </div>
+                    <label><input type="checkbox" id="show-middle" checked> Toon cirkel</label>
+                </div>
+
+                <div class="circle-settings">
+                    <h2>Buitenste cirkel</h2>
+                    <div>
+                        <label>Woorden (gescheiden door komma's)</label>
+                        <textarea id="text-outer"></textarea>
+                    </div>
+                    <div class="color-pickers">
+                        <label>Ringkleur <input type="color" id="bg-outer" value="#7BC296"></label>
+                        <label>Text kleur <input type="color" id="text-outer" value="#7BC296"></label>
+                    </div>
+                    <label><input type="checkbox" id="show-outer" checked> Toon cirkel</label>
+                </div>
+            </div>
+
+            <div class="app-button" >
+                <button id="drawBtn">Teken het diagram</button>
+                <button id="exportBtn">Export PDF</button>
+            </div>
+                
+        </main>
+
+        <div class="draw-wrapper">
+            <canvas id="previewCanvas" width="900" height="900"></canvas>
+
+        </div>
+    </div>
+    <script type="module" src="index.js"></script>
+</body>
+</html>
