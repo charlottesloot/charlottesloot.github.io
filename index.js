@@ -4,26 +4,28 @@ const canvas = document.getElementById('previewCanvas');
 const ctx = canvas.getContext('2d');
 const center = { x: canvas.width / 2, y: canvas.height / 2 };
 
+const canvasPRINT = document.getElementById('hiResCanvas');
+const ctxPRINT = canvasPRINT.getContext('2d');
+const centerPRINT = { x: canvasPRINT.width / 2, y: canvasPRINT.height / 2 };
+
 const ringSpacing = 10;
+const borderThickness = 4;
 
 const circleConfig = [
     { id: 'inner', min: 2, max: 10 },
-    { id: 'middle', min: 3, max: 30 },  // 👈 Allow up to 30
-    { id: 'outer', min: 4, max: 36 }    // 👈 Can be increased too
+    { id: 'middle', min: 2, max: 30 }, // 👈 Allow up to 30
+    { id: 'outer', min: 2, max: 36 }  // 👈 Allow up to 36
 ];
 
-const borderThickness = 4;
-
-function getRingBounds() {
+function getRingBounds(targetCanvas, scale = 1) {
     const totalRingCount = circleConfig.length;
-    const borderPadding = borderThickness; // for donut stroke
-    const innerGap = 30;
+    const innerGap = 30 * scale;
+    const ringSpacing = 10 * scale;
 
-    // Total spacing between rings
+    // const maxUsableRadius = Math.min(targetCanvas.width, targetCanvas.height) / 2;
+    const margin = 10 * scale;  // ⬅ Add a 10px margin on all sides (scaled!)
+    const maxUsableRadius = Math.min(targetCanvas.width, targetCanvas.height) / 2 - margin;
     const totalSpacing = (totalRingCount - 1) * ringSpacing;
-
-    // Subtract spacing and padding from available radius
-    const maxUsableRadius = Math.min(canvas.width, canvas.height) / 2 - borderPadding;
     const ringWidth = (maxUsableRadius - innerGap - totalSpacing) / totalRingCount;
 
     let startRadius = innerGap;
@@ -39,49 +41,45 @@ function getRingBounds() {
     });
 }
 
-function drawRingSegments(strings, innerR, outerR, strokeColor, textColor) {
+function drawRingSegments(ctx, center, scale, strings, innerR, outerR, strokeColor, textColor) {
     const angleStep = (2 * Math.PI) / strings.length;
+    const fontSize = 10 * scale;
+    const lineHeight = fontSize;
+    const strokeWidth = 4 * scale;
 
     strings.forEach((str, i) => {
         const angle = i * angleStep;
         const nextAngle = angle + angleStep;
         const midAngle = angle + angleStep / 2;
 
-        // Ring slice outline
         ctx.beginPath();
         ctx.arc(center.x, center.y, outerR, angle, nextAngle);
         ctx.arc(center.x, center.y, innerR, nextAngle, angle, true);
         ctx.closePath();
 
         ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = borderThickness;
+        ctx.lineWidth = strokeWidth;
         ctx.stroke();
 
-        // TEXT DRAWING WITH WRAPPING
         ctx.save();
-
-        ctx.font = '10px sans-serif';
-        const lineHeight = 10;
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = textColor;
 
         const midRadius = (innerR + outerR) / 2;
         const tx = center.x + midRadius * Math.cos(midAngle);
         const ty = center.y + midRadius * Math.sin(midAngle);
 
         const arcLength = angleStep * midRadius;
-        const maxTextWidth = Math.min(arcLength * 0.65, outerR - innerR - 10); 
-
-        const maxTextHeight = outerR - innerR - 10;
+        const maxTextWidth = Math.min(arcLength * 0.65, outerR - innerR - 10 * scale);
+        const maxTextHeight = outerR - innerR - 10 * scale;
         const maxLines = Math.floor(maxTextHeight / lineHeight);
 
         ctx.translate(tx, ty);
         ctx.rotate(midAngle);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = textColor;
 
         const lines = drawWrappedText(ctx, str.trim(), maxTextWidth, maxLines);
-        const totalHeight = lines.length * lineHeight;
-
         lines.forEach((line, i) => {
             ctx.fillText(line, 0, (i - lines.length / 2 + 0.5) * lineHeight);
         });
@@ -120,9 +118,14 @@ function drawWrappedText(ctx, text, maxWidth, maxLines) {
 
 function drawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const bounds = getRingBounds();
+    ctxPRINT.clearRect(0, 0, canvasPRINT.width, canvasPRINT.height);
 
-    bounds.forEach(cfg => {
+    const boundsNormal = getRingBounds(canvas, 1);
+    const boundsHiRes = getRingBounds(canvasPRINT, 4);  // scale factor = 4
+
+    boundsNormal.forEach((cfg, i) => {
+        const hiResCfg = boundsHiRes[i];
+
         const strings = document.getElementById(`text-${cfg.id}`).value
             .split(',')
             .map(s => s.trim())
@@ -133,7 +136,8 @@ function drawAll() {
         const textColor = document.getElementById(`text-${cfg.id}`).value;
 
         if (show && strings.length >= cfg.min && strings.length <= cfg.max) {
-            drawRingSegments(strings, cfg.innerRadius, cfg.outerRadius, bgColor, textColor);
+            drawRingSegments(ctx, center, 1, strings, cfg.innerRadius, cfg.outerRadius, bgColor, textColor);
+            drawRingSegments(ctxPRINT, centerPRINT, 4, strings, hiResCfg.innerRadius, hiResCfg.outerRadius, bgColor, textColor);
         }
     });
 }
@@ -142,10 +146,9 @@ function exportToPDF() {
     const A4_MM = { width: 210, height: 297 };
     const A3_MM = { width: 297, height: 420 };
     const TARGET_SIZE_MM = 280;
-    const CANVAS_SIZE_PX = 900;
 
     // Count visible rings
-    const bounds = getRingBounds();
+    const bounds = getRingBounds(canvasPRINT);
     let visibleRings = 0;
     bounds.forEach(cfg => {
         const show = document.getElementById(`show-${cfg.id}`).checked;
@@ -159,27 +162,17 @@ function exportToPDF() {
     });
 
     const paperSize = visibleRings === 1 ? A4_MM : A3_MM;
-
     // Create the PDF in millimeters
     const pdf = new jsPDF({
         unit: 'mm',
         orientation: 'portrait',
         format: [paperSize.width, paperSize.height]
     });
-
     // Draw canvas content to temp canvas
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = CANVAS_SIZE_PX;
-    tempCanvas.height = CANVAS_SIZE_PX;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.drawImage(canvas, 0, 0);
-
-    const dataURL = tempCanvas.toDataURL('image/png');
-
+    const dataURL = canvasPRINT.toDataURL('image/png');
     // Center the drawing
     const xOffset = (paperSize.width - TARGET_SIZE_MM) / 2;
     const yOffset = (paperSize.height - TARGET_SIZE_MM) / 2;
-
     // Scale canvas from 900px to 280mm
     pdf.addImage(dataURL, 'PNG', xOffset, yOffset, TARGET_SIZE_MM, TARGET_SIZE_MM);
     pdf.save('diagram.pdf');
