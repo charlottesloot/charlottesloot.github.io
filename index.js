@@ -14,8 +14,8 @@ const borderThickness = 4;
 const circleConfig = [
     // Circle will not render if values are not between min and max values.
     { id: 'inner', min: 2, max: 20 }, // 👈 Allow up to 30
-    { id: 'middle', min: 2, max: 30 }, // 👈 Allow up to 30
-    { id: 'outer', min: 2, max: 45 }  // 👈 Allow up to 45
+    { id: 'middle', min: 2, max: 60 }, // 👈 Allow up to 60
+    { id: 'outer', min: 2, max: 85 }  // 👈 Allow up to 85
 ];
 
 function getRingBounds(targetCanvas, scale = 1) {
